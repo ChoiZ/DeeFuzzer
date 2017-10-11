@@ -211,6 +211,7 @@ class Station(Thread):
 
         self.base_name = self.feeds_dir + os.sep + self.short_name + '_' + self.channel.format
         self.feeds_current_file = self.base_name + '_current'
+        self.feeds_next_file = self.base_name + '_next'
         self.feeds_playlist_file = self.base_name + '_playlist'
 
         # Logging
@@ -474,49 +475,49 @@ class Station(Thread):
             new_playlist = self.get_playlist()
             lp_new = len(new_playlist)
 
-            if not self.counter:
-                self.id = 0
-                if -1 < self.starting_id < lp_new:
-                    self.id = self.starting_id
-                self.playlist = new_playlist
-                self.lp = lp_new
+            #if not self.counter:
+            self.id = 0
+            if -1 < self.starting_id < lp_new:
+                self.id = self.starting_id
+            self.playlist = new_playlist
+            self.lp = lp_new
 
-                # Shake it, Fuzz it !
-                if self.shuffle_mode:
-                    random.shuffle(self.playlist)
+            # Shake it, Fuzz it !
+            if self.shuffle_mode:
+                random.shuffle(self.playlist)
 
-                self._info('Generating new playlist (' + str(self.lp) + ' tracks)')
+            self._info('1) Generating new playlist (' + str(self.lp) + ' tracks)')
 
             # use a hash check instead to detect when a filename changes as well as playlist length
             # Also, recompute the hash every time for the built-in playlist so we can catch when that
             # changes as well
-            elif self.get_array_hash(new_playlist) != self.get_array_hash(self.playlist):
-                self.id += 1
-                if self.id >= lp_new:
-                    self.id = 0
-                else:
-                    self.lp = lp_new
+           #elif self.get_array_hash(new_playlist) != self.get_array_hash(self.playlist):
+           #    self.id += 1
+           #    if self.id >= lp_new:
+           #        self.id = 0
+           #    else:
+           #        self.lp = lp_new
 
-                # Twitting new tracks
-                new_playlist_set = set(new_playlist)
-                playlist_set = set(playlist)
-                new_tracks = new_playlist_set - playlist_set
-                self.new_tracks = list(new_tracks.copy())
+           #    # Twitting new tracks
+           #    new_playlist_set = set(new_playlist)
+           #    playlist_set = set(playlist)
+           #    new_tracks = new_playlist_set - playlist_set
+           #    self.new_tracks = list(new_tracks.copy())
 
-                if self.twitter_mode == 1 and self.counter:
-                    self.tweet()
+           #    if self.twitter_mode == 1 and self.counter:
+           #        self.tweet()
 
-                # Shake it, Fuzz it !
-                if self.shuffle_mode:
-                    random.shuffle(playlist)
+           #    # Shake it, Fuzz it !
+           #    if self.shuffle_mode:
+           #        random.shuffle(playlist)
 
-                # Play new tracks first
-                for track in self.new_tracks:
-                    playlist.insert(0, track)
+           #    # Play new tracks first
+           #    for track in self.new_tracks:
+           #        playlist.insert(0, track)
 
-                self.playlist = playlist
+           #    self.playlist = playlist
 
-                self._info('Generating new playlist (' + str(self.lp) + ' tracks)')
+           #    self._info('2) Generating new playlist (' + str(self.lp) + ' tracks)')
 
             if self.jingles_mode and not (self.counter % self.jingles_frequency) and self.jingles_length:
                 media = self.jingles_list[self.jingle_id]
@@ -532,6 +533,8 @@ class Station(Thread):
                 f.close()
                 if self.feeds_playlist:
                     self.update_feeds(self.media_to_objs(self.playlist), self.feeds_playlist_file, '(playlist)')
+                    m = self.media_to_objs([self.playlist[self.id+1]])
+                    self.update_feeds([m[0]], self.feeds_next_file, '(next)')
             except:
                 pass
             self.q.task_done()
